@@ -2,3 +2,4 @@ playwright_session/
 x_user_session/
 venv/
 __pycache__/
+.env

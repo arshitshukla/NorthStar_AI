@@ -1,4 +1,5 @@
 import asyncio
+import httpx
 from playwright.async_api import async_playwright
 from playwright_stealth import Stealth # Note the change here
 
@@ -42,8 +43,20 @@ async def run_stealth_scraper():
 
             # 4. Extract real data
             tweets = await page.locator('div[data-testid="tweetText"]').all_inner_texts()
-            for i, t in enumerate(tweets[:5]):
-                print(f"📡 Tweet {i+1}: {t[:70]}...")
+            user_elements = await page.locator('div[data-testid="User-Name"]').all_inner_texts()
+            async with httpx.AsyncClient() as client:
+                for i, t in enumerate(tweets[:5]):
+                    user_name = user_elements[i].split('\n')[0] if i < len(user_elements) else "Unknown"
+                    payload = {"text": t, "user": user_name}
+                    
+                    try:
+                        # Now 'client' refers to httpx.AsyncClient()
+                        response = await client.post("http://localhost:8000/ingest", json=payload)
+                        print(f"🧠 Brain Response: {response.json()}")
+                    except Exception as e:
+                        print(f"❌ Connection Error: {e}")
+                    
+                    print(f"📡 Tweet {i+1}: {t[:70]}...")
 
         except Exception as e:
             print(f"⚠️ Error: {e}")
